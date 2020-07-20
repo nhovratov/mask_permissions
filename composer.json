@@ -1,0 +1,38 @@
+{
+	"name": "hov/mask-permissions",
+	"type": "typo3-cms-extension",
+	"description": "Never configure mask permissions for editors manually ever again!",
+	"keywords": [
+		"TYPO3 CMS",
+		"Mask"
+	],
+	"authors": [
+		{
+			"name": "Nikita Hovratov",
+			"email": "entwicklung@nikita-hovratov.de",
+			"role": "Developer",
+			"homepage": "https://www.nikita-hovratov.de"
+		}
+	],
+	"license": "GPL-2.0-or-later",
+	"require": {
+		"php": "^7.2",
+		"typo3/cms-core": "^9.5 || ^10.4",
+		"typo3/cms-backend": "^9.5 || ^10.4",
+		"mask/mask": "^5"
+	},
+	"replace": {
+		"typo3-ter/mask-permissions": "self.version"
+	},
+	"autoload": {
+		"psr-4": {
+			"HOV\\MaskPermissions\\": "Classes/"
+		}
+	},
+	"extra": {
+		"typo3/cms": {
+			"cms-package-dir": "{$vendor-dir}/typo3/cms",
+			"extension-key": "mask_permissions"
+		}
+	}
+}

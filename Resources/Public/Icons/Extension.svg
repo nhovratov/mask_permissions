@@ -1,0 +1,7 @@
+<svg id="module-permission" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <path id="Pfad_7" data-name="Pfad 7" d="M0,0H64V64H0Z" fill="#d4372f"/>
+  <path id="Pfad_8" data-name="Pfad 8" d="M45,48H19a1,1,0,0,1-1-1V31a1,1,0,0,1,1-1H45a1,1,0,0,1,1,1V47A1,1,0,0,1,45,48Z" fill="#fff"/>
+  <path id="Pfad_9" data-name="Pfad 9" d="M32,19.5a6.007,6.007,0,0,1,6,6h4a10,10,0,0,0-20,0v8h4v-8A6.007,6.007,0,0,1,32,19.5Z" fill="#fff"/>
+  <circle id="Ellipse_1" data-name="Ellipse 1" cx="4" cy="4" r="4" transform="translate(28 34)" fill="#d4372f"/>
+  <path id="Pfad_10" data-name="Pfad 10" d="M30,38h4v6H30Z" fill="#d4372f"/>
+</svg>
