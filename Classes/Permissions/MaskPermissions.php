@@ -15,20 +15,17 @@ declare(strict_types=1);
  * The TYPO3 project - inspiring people to share!
  */
 
-namespace HOV\MaskPermissions\Updates;
+namespace HOV\MaskPermissions\Permissions;
 
-use MASK\Mask\Domain\Repository\StorageRepository;
 use TYPO3\CMS\Beuser\Domain\Repository\BackendUserGroupRepository;
+use MASK\Mask\Domain\Repository\StorageRepository;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Install\Updates\RepeatableInterface;
-use TYPO3\CMS\Install\Updates\UpgradeWizardInterface;
 
-class MaskPermissions implements UpgradeWizardInterface, RepeatableInterface
+class MaskPermissions
 {
-
     protected $defaultExcludeFields = [
         'sys_language_uid',
         'starttime',
@@ -40,51 +37,23 @@ class MaskPermissions implements UpgradeWizardInterface, RepeatableInterface
     ];
 
     /**
-     * Return the identifier for this wizard
-     * This should be the same string as used in the ext_localconf class registration
-     *
-     * @return string
-     */
-    public function getIdentifier(): string
-    {
-        return 'maskPermissions';
-    }
-
-    /**
-     * Return the speaking name of this wizard
-     *
-     * @return string
-     */
-    public function getTitle(): string
-    {
-        return 'Mask Permissions';
-    }
-
-    /**
-     * Return the description for this wizard
-     *
-     * @return string
-     */
-    public function getDescription(): string
-    {
-        return 'Add mask element permissions for editors.';
-    }
-
-    /**
-     * Execute the update
-     *
-     * Called when a wizard reports that an update is necessary
-     *
+     * @param int $group
      * @return bool
      */
-    public function executeUpdate(): bool
+    public function update($group = 0)
     {
         $maskConfig = $this->getMaskConfig();
         if (!$maskConfig) {
             return false;
         }
 
-        foreach ($this->getBeUserGroups() as $group) {
+        if ($group) {
+            $groups = [$group];
+        } else {
+            $groups = $this->getBeUserGroups();
+        }
+
+        foreach ($groups as $group) {
             $result = $this->getPermissions($group);
 
             // Update non_exclude_fields
@@ -131,7 +100,6 @@ class MaskPermissions implements UpgradeWizardInterface, RepeatableInterface
                 ->where($queryBuilder->expr()->eq('uid', $group))
                 ->execute();
         }
-
         return true;
     }
 
@@ -141,16 +109,23 @@ class MaskPermissions implements UpgradeWizardInterface, RepeatableInterface
      * Is used to determine whether a wizard needs to be run.
      * Check if data for migration exists.
      *
+     * @param int $group
      * @return bool
      */
-    public function updateNecessary(): bool
+    public function updateNecessary($group = 0): bool
     {
         $maskConfig = $this->getMaskConfig();
         if (!$maskConfig) {
             return false;
         }
 
-        foreach ($this->getBeUserGroups() as $uid) {
+        if ($group) {
+            $groups = [$group];
+        } else {
+            $groups = $this->getBeUserGroups();
+        }
+
+        foreach ($groups as $uid) {
             $result = $this->getPermissions($uid);
 
             $nonExcludeFields = $result['non_exclude_fields'];
@@ -185,19 +160,6 @@ class MaskPermissions implements UpgradeWizardInterface, RepeatableInterface
             }
         }
         return false;
-    }
-
-    /**
-     * Returns an array of class names of Prerequisite classes
-     *
-     * This way a wizard can define dependencies like "database up-to-date" or
-     * "reference index updated"
-     *
-     * @return string[]
-     */
-    public function getPrerequisites(): array
-    {
-        return [];
     }
 
     /**

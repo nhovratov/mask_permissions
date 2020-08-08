@@ -1,0 +1,5 @@
+services:
+  HOV\MaskPermissions\Command\MaskPermissionsComand:
+    tags:
+      - name: 'console.command'
+        comand: 'maskpermissions:update'
