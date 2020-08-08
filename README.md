@@ -1,7 +1,8 @@
 # Mask Permissions
 
-This extension adds an update wizard, which updates all of your backend user group permissions for all of your mask elements.
-No need to do it manually anymore!
+This extension adds a backend module, where you can update your mask permissions for individual BE user groups or just all in one go.
+No need to fiddle around in the permissions of backend users anymore!
 
 ## How to use it
-Just install the extension and go to Upgrade->Run Upgrade Wizard. If you have Backend User Groups defined and they need to update mask permissions, the updater will notice and you can run it. This can be done multiple times e.g. if you add more mask elements later on.
+Just install the extension and go to the new module "Mask Permissions". There will be a list of all backend user groups and an info, if an update is necessary. If so, you can click "grant permissions" and all mask elements will be available for this group.
+There is also a button "Grant permissions to all" if all groups should have access.
