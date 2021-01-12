@@ -15,6 +15,10 @@
 		}
 	],
 	"license": "GPL-2.0-or-later",
+	"config": {
+		"vendor-dir": ".Build/vendor",
+		"bin-dir": ".Build/bin"
+	},
 	"require": {
 		"php": "^7.2",
 		"typo3/cms-core": ">=9.5.20 || >=10.4.6",
@@ -32,7 +36,11 @@
 	"extra": {
 		"typo3/cms": {
 			"cms-package-dir": "{$vendor-dir}/typo3/cms",
-			"extension-key": "mask_permissions"
+			"extension-key": "mask_permissions",
+			"web-dir": ".Build/Web"
 		}
+	},
+	"require-dev": {
+		"typo3/tailor": "^1.2"
 	}
 }
