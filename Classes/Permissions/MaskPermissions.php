@@ -20,6 +20,7 @@ namespace HOV\MaskPermissions\Permissions;
 use TYPO3\CMS\Beuser\Domain\Repository\BackendUserGroupRepository;
 use MASK\Mask\Domain\Repository\StorageRepository;
 use TYPO3\CMS\Core\Database\ConnectionPool;
+use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -38,7 +39,7 @@ class MaskPermissions
     public function update(int $groupUid = 0): bool
     {
         $maskConfig = $this->getMaskConfig();
-        if (!$maskConfig) {
+        if ($maskConfig === []) {
             return false;
         }
 
@@ -107,7 +108,7 @@ class MaskPermissions
     public function updateNecessary(int $groupUid = 0): bool
     {
         $maskConfig = $this->getMaskConfig();
-        if (!$maskConfig) {
+        if ($maskConfig === []) {
             return false;
         }
 
@@ -154,41 +155,30 @@ class MaskPermissions
         return false;
     }
 
-    /**
-     * @param $table
-     * @return \TYPO3\CMS\Core\Database\Query\QueryBuilder
-     */
-    protected function getQueryBuilder($table)
+    protected function getQueryBuilder(string $table): QueryBuilder
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable($table);
         $queryBuilder->getRestrictions()->removeAll()->add(GeneralUtility::makeInstance(DeletedRestriction::class));
         return $queryBuilder;
     }
 
-    /**
-     * @return bool|mixed
-     */
-    protected function getMaskConfig()
+    protected function getMaskConfig(): array
     {
         $storageRepository = GeneralUtility::makeInstance(StorageRepository::class);
         $maskConfig = $storageRepository->load();
         if (!$maskConfig) {
-            return false;
+            return [];
         }
         return $maskConfig;
     }
 
-    /**
-     * @param $maskConfig
-     * @return array
-     */
-    protected function getMaskFields($maskConfig)
+    protected function getMaskFields(array $maskConfig): array
     {
         $elements = $this->getMaskElements($maskConfig);
         $fields = [];
 
         foreach ($elements as $element) {
-            if (!key_exists('columns', $element)) {
+            if (!array_key_exists('columns', $element)) {
                 continue;
             }
             $columns = $element['columns'];
@@ -201,18 +191,18 @@ class MaskPermissions
         return $fields;
     }
 
-    protected function getMaskCustomTables($maskConfig)
+    protected function getMaskCustomTables(array $maskConfig): array
     {
         $keys = array_keys($maskConfig);
         return array_filter(
             $keys,
-            function ($item) {
+            static function ($item) {
                 return strpos($item, 'tx_mask') !== false;
             }
         );
     }
 
-    protected function getMaskAdditionalTableModify($maskConfig)
+    protected function getMaskAdditionalTableModify(array $maskConfig): array
     {
         $customTables = $this->getMaskCustomTables($maskConfig);
         $additionalTableModify = [];
@@ -227,7 +217,7 @@ class MaskPermissions
         return $additionalTableModify;
     }
 
-    protected function getMaskExplicitAllow($maskConfig)
+    protected function getMaskExplicitAllow(array $maskConfig): array
     {
         $elements = $this->getMaskElements($maskConfig);
         $explicitAllow = [];
@@ -248,12 +238,12 @@ class MaskPermissions
             ->fetch();
     }
 
-    protected function getMaskElements($maskConfig)
+    protected function getMaskElements(array $maskConfig): array
     {
-        return $maskConfig['tt_content']['elements'];
+        return $maskConfig['tt_content']['elements'] ?? [];
     }
 
-    protected function getBeUserGroups()
+    protected function getBeUserGroups(): array
     {
         $uids = [];
         $backendUserGroups = GeneralUtility::makeInstance(BackendUserGroupRepository::class)->findAll();
