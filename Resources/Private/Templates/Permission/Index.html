@@ -24,7 +24,7 @@
             <span>[{group.uid}] {group.title}</span>
             <f:if condition="{updatesNeeded.{group.uid}}">
                 <f:then>
-                    <f:link.action action="update" arguments="{group: group}" class="btn btn-xs btn-primary mp-button">Grant permissions</f:link.action>
+                    <f:link.action action="update" arguments="{group: group}" class="btn btn-sm btn-xs btn-primary mp-button">Grant permissions</f:link.action>
                     <span class="badge badge-warning pull-right">Missing permissions</span>
                 </f:then>
                 <f:else>
