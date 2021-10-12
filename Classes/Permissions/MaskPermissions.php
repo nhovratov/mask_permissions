@@ -43,7 +43,7 @@ class MaskPermissions
             return false;
         }
 
-        if ($groupUid) {
+        if ($groupUid !== 0) {
             $groups = [$groupUid];
         } else {
             $groups = $this->getBeUserGroups();

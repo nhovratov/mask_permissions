@@ -72,7 +72,7 @@ class PermissionController extends ActionController
     public function updateAction()
     {
         if ($this->request->hasArgument('group')) {
-            $success = $this->permissionUpdater->update($this->request->getArgument('group'));
+            $success = $this->permissionUpdater->update((int)$this->request->getArgument('group'));
         } else {
             $success = $this->permissionUpdater->update();
         }
