@@ -9,10 +9,10 @@ $EM_CONF['mask_permissions'] = [
     'author_company' => 'Nikita Hovratov',
     'state' => 'stable',
     'clearCacheOnLoad' => 1,
-    'version' => '2.0.2',
+    'version' => '2.0.3',
     'constraints' => [
         'depends' => [
-            'typo3' => '9.5.0-10.4.99',
+            'typo3' => '9.5.0-11.5.99',
             'mask' => '',
         ],
         'conflicts' => [],
