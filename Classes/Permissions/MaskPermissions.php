@@ -21,7 +21,6 @@ use TYPO3\CMS\Beuser\Domain\Repository\BackendUserGroupRepository;
 use MASK\Mask\Domain\Repository\StorageRepository;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
-use TYPO3\CMS\Core\Utility\ExtensionManagementUtility;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class MaskPermissions
@@ -171,9 +170,6 @@ class MaskPermissions
      */
     protected function getMaskConfig()
     {
-        if (!ExtensionManagementUtility::isLoaded('mask')) {
-            return false;
-        }
         $storageRepository = GeneralUtility::makeInstance(StorageRepository::class);
         $maskConfig = $storageRepository->load();
         if (!$maskConfig) {
