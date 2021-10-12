@@ -36,19 +36,15 @@ class MaskPermissions
         'editlock'
     ];
 
-    /**
-     * @param int $group
-     * @return bool
-     */
-    public function update($group = 0)
+    public function update(int $groupUid = 0): bool
     {
         $maskConfig = $this->getMaskConfig();
         if (!$maskConfig) {
             return false;
         }
 
-        if ($group) {
-            $groups = [$group];
+        if ($groupUid) {
+            $groups = [$groupUid];
         } else {
             $groups = $this->getBeUserGroups();
         }
@@ -108,19 +104,16 @@ class MaskPermissions
      *
      * Is used to determine whether a wizard needs to be run.
      * Check if data for migration exists.
-     *
-     * @param int $group
-     * @return bool
      */
-    public function updateNecessary($group = 0): bool
+    public function updateNecessary(int $groupUid = 0): bool
     {
         $maskConfig = $this->getMaskConfig();
         if (!$maskConfig) {
             return false;
         }
 
-        if ($group) {
-            $groups = [$group];
+        if ($groupUid) {
+            $groups = [$groupUid];
         } else {
             $groups = $this->getBeUserGroups();
         }
@@ -132,7 +125,7 @@ class MaskPermissions
             $nonExcludeFields = GeneralUtility::trimExplode(',', $nonExcludeFields);
             $nonExcludeFields = array_filter(
                 $nonExcludeFields,
-                function ($item) {
+                static function ($item) {
                     return strpos($item, 'tx_mask') !== false;
                 }
             );
@@ -144,7 +137,7 @@ class MaskPermissions
             $tablesModify = GeneralUtility::trimExplode(',', $tablesModify);
             $tablesModify = array_filter(
                 $tablesModify,
-                function ($item) {
+                static function ($item) {
                     return strpos($item, 'tx_mask') !== false;
                 }
             );
