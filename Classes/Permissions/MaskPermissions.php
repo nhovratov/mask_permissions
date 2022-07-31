@@ -17,6 +17,7 @@ declare(strict_types=1);
 
 namespace HOV\MaskPermissions\Permissions;
 
+use MASK\Mask\Helper\FieldHelper;
 use TYPO3\CMS\Beuser\Domain\Repository\BackendUserGroupRepository;
 use MASK\Mask\Domain\Repository\StorageRepository;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -174,6 +175,11 @@ class MaskPermissions
 
     protected function getMaskFields(array $maskConfig): array
     {
+        if (method_exists(FieldHelper::class, 'getFormType')) {
+            $fieldHelper = GeneralUtility::makeInstance(FieldHelper::class);
+        } else {
+            $fieldHelper = GeneralUtility::makeInstance(StorageRepository::class);
+        }
         $elements = $this->getMaskElements($maskConfig);
         $fields = [];
 
@@ -183,10 +189,22 @@ class MaskPermissions
             }
             $columns = $element['columns'];
             foreach ($columns as $col) {
-                if (strpos($col, 'tx_mask') !== false) {
-                    $fields[] = 'tt_content:' . $col;
+                if ($fieldHelper->getFormType($col, $element['key']) === 'palette') {
+                    foreach ($maskConfig['tt_content']['palettes'][$col]['showitem'] ?? [] as $item) {
+                        $fields = $this->addField($fields, $item);
+                    }
+                } else {
+                    $fields = $this->addField($fields, $col);
                 }
             }
+        }
+        return $fields;
+    }
+
+    protected function addField(array $fields, string $column): array
+    {
+        if (strpos($column, 'tx_mask') !== false) {
+            $fields[] = 'tt_content:' . $column;
         }
         return $fields;
     }
