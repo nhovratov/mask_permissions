@@ -53,20 +53,20 @@ class MaskPermissions
             $result = $this->getPermissions($group);
 
             // Update non_exclude_fields
-            $nonExludeFields = $result['non_exclude_fields'];
-            $nonExludeFields = GeneralUtility::trimExplode(',', $nonExludeFields);
-            $nonExludeFields = array_merge(
-                $nonExludeFields,
+            $nonExcludeFields = $result['non_exclude_fields'];
+            $nonExcludeFields = GeneralUtility::trimExplode(',', $nonExcludeFields);
+            $nonExcludeFields = array_merge(
+                $nonExcludeFields,
                 $this->getMaskFields($maskConfig),
                 $this->getMaskAdditionalTableModify($maskConfig)
             );
-            $nonExludeFields = array_unique($nonExludeFields);
-            $nonExludeFields = implode(',', $nonExludeFields);
+            $nonExcludeFields = array_unique($nonExcludeFields);
+            $nonExcludeFields = implode(',', $nonExcludeFields);
 
             $queryBuilder = $this->getQueryBuilder('be_groups');
             $queryBuilder
                 ->update('be_groups')
-                ->set('non_exclude_fields', $nonExludeFields)
+                ->set('non_exclude_fields', $nonExcludeFields)
                 ->where($queryBuilder->expr()->eq('uid', $group))
                 ->execute();
 
