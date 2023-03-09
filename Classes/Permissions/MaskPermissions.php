@@ -24,6 +24,7 @@ use TYPO3\CMS\Beuser\Domain\Repository\BackendUserGroupRepository;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
+use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class MaskPermissions
@@ -223,8 +224,12 @@ class MaskPermissions
     protected function getMaskExplicitAllow(): array
     {
         $explicitAllow = [];
+        $allow = '';
+        if ((new Typo3Version())->getMajorVersion() < 12) {
+            $allow = ':ALLOW';
+        }
         foreach ($this->tableDefinitionCollection->getTable('tt_content')->elements as $elementDefinition) {
-            $explicitAllow[] = 'tt_content:CType:' . AffixUtility::addMaskCTypePrefix($elementDefinition->key) . ':ALLOW';
+            $explicitAllow[] = 'tt_content:CType:' . AffixUtility::addMaskCTypePrefix($elementDefinition->key) . $allow;
         }
         return $explicitAllow;
     }
