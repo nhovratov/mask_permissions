@@ -20,10 +20,9 @@
 		"bin-dir": ".Build/bin"
 	},
 	"require": {
-		"php": "^7.2 || ^8.0",
-		"typo3/cms-core": ">=9.5.20 || >=10.4.6 || ^11.5",
-		"typo3/cms-backend": ">=9.5.20 || >=10.4.6 || ^11.5",
-		"mask/mask": "^4 || ^5 || ^6 || ^7"
+		"php": "^7.4 || ^8.0",
+		"typo3/cms-core": "^11.5 || ^12.0",
+		"mask/mask": "^7.2 || ^8.0"
 	},
 	"replace": {
 		"typo3-ter/mask-permissions": "self.version"

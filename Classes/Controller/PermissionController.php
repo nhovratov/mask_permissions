@@ -15,45 +15,33 @@ declare(strict_types=1);
  * The TYPO3 project - inspiring people to share!
  */
 
-
 namespace HOV\MaskPermissions\Controller;
 
 use HOV\MaskPermissions\Permissions\MaskPermissions;
-use TYPO3\CMS\Backend\View\BackendTemplateView;
+use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
 use TYPO3\CMS\Beuser\Domain\Repository\BackendUserGroupRepository;
+use TYPO3\CMS\Core\Http\HtmlResponse;
 use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Extbase\Mvc\Controller\ActionController;
 
 class PermissionController extends ActionController
 {
-    /**
-     * Backend Template Container
-     *
-     * @var string
-     */
-    protected $defaultViewObjectName = BackendTemplateView::class;
+    protected BackendUserGroupRepository $backendUserGroupRepository;
+    protected MaskPermissions $permissionUpdater;
+    protected ModuleTemplateFactory $moduleTemplateFactory;
 
-    /**
-     * @var BackendUserGroupRepository
-     */
-    protected $backendUserGroupRepository;
-
-    /**
-     * @var MaskPermissions
-     */
-    protected $permissionUpdater;
-
-    public function injectBackendUserGroupRepository(BackendUserGroupRepository $backendUserGroupRepository)
-    {
+    public function __construct(
+        BackendUserGroupRepository $backendUserGroupRepository,
+        MaskPermissions $maskPermissions,
+        ModuleTemplateFactory $moduleTemplateFactory
+    ) {
         $this->backendUserGroupRepository = $backendUserGroupRepository;
-    }
-
-    public function injectMaskPermissions(MaskPermissions $maskPermissions)
-    {
         $this->permissionUpdater = $maskPermissions;
+        $this->moduleTemplateFactory = $moduleTemplateFactory;
     }
 
-    public function indexAction()
+    public function indexAction(): ResponseInterface
     {
         $groups = $this->backendUserGroupRepository->findAll();
         $updatesNeeded = [];
@@ -61,15 +49,28 @@ class PermissionController extends ActionController
             $uid = $group->getUid();
             $updatesNeeded[$uid] = $this->permissionUpdater->updateNecessary($uid);
         }
-        $this->view->assign('groups', $this->backendUserGroupRepository->findAll());
-        $this->view->assign('canUpdate', $this->permissionUpdater->updateNecessary());
-        $this->view->assign('updatesNeeded', $updatesNeeded);
+
+        $moduleTemplate = $this->moduleTemplateFactory->create($this->request);
+
+        if (method_exists($moduleTemplate, 'assign')) {
+            $moduleTemplate->assign('groups', $this->backendUserGroupRepository->findAll());
+            $moduleTemplate->assign('canUpdate', $this->permissionUpdater->updateNecessary());
+            $moduleTemplate->assign('updatesNeeded', $updatesNeeded);
+        } else {
+            $this->view->assign('groups', $this->backendUserGroupRepository->findAll());
+            $this->view->assign('canUpdate', $this->permissionUpdater->updateNecessary());
+            $this->view->assign('updatesNeeded', $updatesNeeded);
+        }
+
+        if (method_exists($moduleTemplate, 'renderResponse')) {
+            return $moduleTemplate->renderResponse('IndexNew');
+        } else {
+            $moduleTemplate->setContent($this->view->render());
+            return new HtmlResponse($moduleTemplate->renderContent());
+        }
     }
 
-    /**
-     * @throws \TYPO3\CMS\Extbase\Mvc\Exception\StopActionException
-     */
-    public function updateAction()
+    public function updateAction(): ResponseInterface
     {
         if ($this->request->hasArgument('group')) {
             $success = $this->permissionUpdater->update((int)$this->request->getArgument('group'));
@@ -81,6 +82,6 @@ class PermissionController extends ActionController
         } else {
             $this->addFlashMessage('Update failed.', '', AbstractMessage::ERROR);
         }
-        $this->redirect('index');
+        return $this->redirect('index');
     }
 }

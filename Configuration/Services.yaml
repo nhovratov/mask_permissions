@@ -1,4 +1,12 @@
 services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  HOV\MaskPermissions\:
+    resource: '../Classes/*'
+
   HOV\MaskPermissions\Command\MaskPermissionsCommand:
     tags:
       - name: 'console.command'

@@ -17,9 +17,10 @@ declare(strict_types=1);
 
 namespace HOV\MaskPermissions\Permissions;
 
-use MASK\Mask\Helper\FieldHelper;
+use MASK\Mask\Definition\TableDefinitionCollection;
+use MASK\Mask\Enumeration\FieldType;
+use MASK\Mask\Utility\AffixUtility;
 use TYPO3\CMS\Beuser\Domain\Repository\BackendUserGroupRepository;
-use MASK\Mask\Domain\Repository\StorageRepository;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
@@ -27,7 +28,14 @@ use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class MaskPermissions
 {
-    protected $defaultExcludeFields = [
+    protected TableDefinitionCollection $tableDefinitionCollection;
+
+    public function __construct(TableDefinitionCollection $tableDefinitionCollection)
+    {
+        $this->tableDefinitionCollection = $tableDefinitionCollection;
+    }
+
+    protected array $defaultExcludeFields = [
         'sys_language_uid',
         'starttime',
         'endtime',
@@ -58,8 +66,8 @@ class MaskPermissions
             $nonExcludeFields = GeneralUtility::trimExplode(',', $nonExcludeFields);
             $nonExcludeFields = array_merge(
                 $nonExcludeFields,
-                $this->getMaskFields($maskConfig),
-                $this->getMaskAdditionalTableModify($maskConfig)
+                $this->getMaskFields(),
+                $this->getMaskAdditionalTableModify()
             );
             $nonExcludeFields = array_unique($nonExcludeFields);
             $nonExcludeFields = implode(',', $nonExcludeFields);
@@ -69,12 +77,12 @@ class MaskPermissions
                 ->update('be_groups')
                 ->set('non_exclude_fields', $nonExcludeFields)
                 ->where($queryBuilder->expr()->eq('uid', $group))
-                ->execute();
+                ->executeStatement();
 
             // Update tables_modify
             $tablesModify = $result['tables_modify'];
             $tablesModify = GeneralUtility::trimExplode(',', $tablesModify);
-            $tablesModify = array_merge($tablesModify, $this->getMaskCustomTables($maskConfig));
+            $tablesModify = array_merge($tablesModify, $this->getMaskCustomTables());
             $tablesModify = array_unique($tablesModify);
             $tablesModify = implode(',', $tablesModify);
 
@@ -82,12 +90,12 @@ class MaskPermissions
                 ->update('be_groups')
                 ->set('tables_modify', $tablesModify)
                 ->where($queryBuilder->expr()->eq('uid', $group))
-                ->execute();
+                ->executeStatement();
 
             // Update explicit_allowdeny
             $explicitAllowDeny = $result['explicit_allowdeny'];
             $explicitAllowDeny = GeneralUtility::trimExplode(',', $explicitAllowDeny);
-            $explicitAllowDeny = array_merge($explicitAllowDeny, $this->getMaskExplicitAllow($maskConfig));
+            $explicitAllowDeny = array_merge($explicitAllowDeny, $this->getMaskExplicitAllow());
             $explicitAllowDeny = array_unique($explicitAllowDeny);
             $explicitAllowDeny = implode(',', $explicitAllowDeny);
 
@@ -95,7 +103,7 @@ class MaskPermissions
                 ->update('be_groups')
                 ->set('explicit_allowdeny', $explicitAllowDeny)
                 ->where($queryBuilder->expr()->eq('uid', $group))
-                ->execute();
+                ->executeStatement();
         }
         return true;
     }
@@ -108,11 +116,6 @@ class MaskPermissions
      */
     public function updateNecessary(int $groupUid = 0): bool
     {
-        $maskConfig = $this->getMaskConfig();
-        if ($maskConfig === []) {
-            return false;
-        }
-
         if ($groupUid) {
             $groups = [$groupUid];
         } else {
@@ -131,7 +134,7 @@ class MaskPermissions
                 }
             );
 
-            $fields = array_merge($this->getMaskFields($maskConfig), $this->getMaskAdditionalTableModify($maskConfig));
+            $fields = array_merge($this->getMaskFields(), $this->getMaskAdditionalTableModify());
             $fieldsToUpdate = array_diff($fields, $nonExcludeFields);
 
             $tablesModify = $result['tables_modify'];
@@ -143,11 +146,11 @@ class MaskPermissions
                 }
             );
 
-            $tablesToUpdate = array_diff($this->getMaskCustomTables($maskConfig), $tablesModify);
+            $tablesToUpdate = array_diff($this->getMaskCustomTables(), $tablesModify);
 
             $explicitAllowDeny = $result['explicit_allowdeny'];
             $explicitAllowDeny = GeneralUtility::trimExplode(',', $explicitAllowDeny);
-            $explicitAllowDenyToUpdate = array_diff($this->getMaskExplicitAllow($maskConfig), $explicitAllowDeny);
+            $explicitAllowDenyToUpdate = array_diff($this->getMaskExplicitAllow(), $explicitAllowDeny);
 
             if ($fieldsToUpdate || $tablesToUpdate || $explicitAllowDenyToUpdate) {
                 return true;
@@ -165,36 +168,21 @@ class MaskPermissions
 
     protected function getMaskConfig(): array
     {
-        $storageRepository = GeneralUtility::makeInstance(StorageRepository::class);
-        $maskConfig = $storageRepository->load();
-        if (!$maskConfig) {
-            return [];
-        }
-        return $maskConfig;
+        return $this->tableDefinitionCollection->toArray();
     }
 
-    protected function getMaskFields(array $maskConfig): array
+    protected function getMaskFields(): array
     {
-        if (method_exists(FieldHelper::class, 'getFormType')) {
-            $fieldHelper = GeneralUtility::makeInstance(FieldHelper::class);
-        } else {
-            $fieldHelper = GeneralUtility::makeInstance(StorageRepository::class);
-        }
-        $elements = $this->getMaskElements($maskConfig);
         $fields = [];
-
-        foreach ($elements as $element) {
-            if (!array_key_exists('columns', $element)) {
-                continue;
-            }
-            $columns = $element['columns'];
-            foreach ($columns as $col) {
-                if ($fieldHelper->getFormType($col, $element['key']) === 'palette') {
-                    foreach ($maskConfig['tt_content']['palettes'][$col]['showitem'] ?? [] as $item) {
+        $tt_content = $this->tableDefinitionCollection->getTable('tt_content');
+        foreach ($tt_content->elements as $element) {
+            foreach ($element->columns as $column) {
+                if ($this->tableDefinitionCollection->getFieldType($column, 'tt_content', $element->key)->equals(FieldType::PALETTE)) {
+                    foreach ($tt_content->palettes->getPalette($column)->showitem as $item) {
                         $fields = $this->addField($fields, $item);
                     }
                 } else {
-                    $fields = $this->addField($fields, $col);
+                    $fields = $this->addField($fields, $column);
                 }
             }
         }
@@ -209,56 +197,47 @@ class MaskPermissions
         return $fields;
     }
 
-    protected function getMaskCustomTables(array $maskConfig): array
+    protected function getMaskCustomTables(): array
     {
-        $keys = array_keys($maskConfig);
-        return array_filter(
-            $keys,
-            static function ($item) {
-                return strpos($item, 'tx_mask') !== false;
-            }
-        );
+        $customTables = [];
+        foreach ($this->tableDefinitionCollection->getCustomTables() as $tableDefinition) {
+            $customTables[] = $tableDefinition->table;
+        }
+        return $customTables;
     }
 
-    protected function getMaskAdditionalTableModify(array $maskConfig): array
+    protected function getMaskAdditionalTableModify(): array
     {
-        $customTables = $this->getMaskCustomTables($maskConfig);
         $additionalTableModify = [];
-        foreach ($customTables as $key) {
-            foreach ($maskConfig[$key]['tca'] as $tcaField => $value) {
-                $additionalTableModify[] = $key . ':' . $tcaField;
+        foreach ($this->tableDefinitionCollection->getCustomTables() as $tableDefinition) {
+            foreach ($tableDefinition->tca as $tcaField) {
+                $additionalTableModify[] = $tableDefinition->table . ':' . $tcaField->fullKey;
             }
             foreach ($this->defaultExcludeFields as $default) {
-                $additionalTableModify[] = $key . ':' . $default;
+                $additionalTableModify[] = $tableDefinition->table . ':' . $default;
             }
         }
         return $additionalTableModify;
     }
 
-    protected function getMaskExplicitAllow(array $maskConfig): array
+    protected function getMaskExplicitAllow(): array
     {
-        $elements = $this->getMaskElements($maskConfig);
         $explicitAllow = [];
-        foreach ($elements as $element => $value) {
-            $explicitAllow[] = 'tt_content:CType:mask_' . $element . ':ALLOW';
+        foreach ($this->tableDefinitionCollection->getTable('tt_content')->elements as $elementDefinition) {
+            $explicitAllow[] = 'tt_content:CType:' . AffixUtility::addMaskCTypePrefix($elementDefinition->key) . ':ALLOW';
         }
         return $explicitAllow;
     }
 
-    protected function getPermissions($uid)
+    protected function getPermissions(int $uid): array
     {
         $queryBuilder = $this->getQueryBuilder('be_groups');
         return $queryBuilder
             ->select('non_exclude_fields', 'tables_modify', 'explicit_allowdeny')
             ->from('be_groups')
-            ->where($queryBuilder->expr()->eq('uid', $uid))
-            ->execute()
-            ->fetch();
-    }
-
-    protected function getMaskElements(array $maskConfig): array
-    {
-        return $maskConfig['tt_content']['elements'] ?? [];
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT)))
+            ->executeQuery()
+            ->fetchAssociative();
     }
 
     protected function getBeUserGroups(): array
