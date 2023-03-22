@@ -22,38 +22,30 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class MaskPermissionsCommand extends Command
 {
+    protected MaskPermissions $maskPermissions;
+
+    public function injectMaskPermissions(MaskPermissions $maskPermissions): void
+    {
+        $this->maskPermissions = $maskPermissions;
+    }
+
     protected function configure()
     {
         $this->setDescription('Update mask permissions for backend user groups.');
         $this->setHelp('Specify BE User Group uid as first argument. Without arguments all groups will be updated.');
-        $this->addArgument(
-            'group',
-            InputArgument::OPTIONAL,
-            'Backend User Group Uid.',
-            0
-        );
+        $this->addArgument('group', InputArgument::OPTIONAL, 'Backend User Group Uid.', 0);
     }
 
-    /**
-     * Execute the update
-     *
-     * Called when a wizard reports that an update is necessary
-     *
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     */
-    public function execute(InputInterface $input, OutputInterface $output)
+    public function execute(InputInterface $input, OutputInterface $output): int
     {
-        $maskPermissionUpdater = GeneralUtility::makeInstance(MaskPermissions::class);
-        $group = $input->getArgument('group');
-        if (!$maskPermissionUpdater->updateNecessary($group)) {
-            return 0;
+        $group = (int)$input->getArgument('group');
+        if (!$this->maskPermissions->updateNecessary($group)) {
+            return self::SUCCESS;
         }
-        $maskPermissionUpdater->update($group);
-        return 0;
+        $this->maskPermissions->update($group);
+        return self::SUCCESS;
     }
 }
