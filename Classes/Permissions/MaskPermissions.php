@@ -67,7 +67,8 @@ class MaskPermissions
             $nonExcludeFields = GeneralUtility::trimExplode(',', $nonExcludeFields);
             $nonExcludeFields = array_merge(
                 $nonExcludeFields,
-                $this->getMaskFields(),
+                $this->getMaskFields('tt_content'),
+                $this->getMaskFields('pages'),
                 $this->getMaskAdditionalTableModify()
             );
             $nonExcludeFields = array_unique($nonExcludeFields);
@@ -135,7 +136,11 @@ class MaskPermissions
                 }
             );
 
-            $fields = array_merge($this->getMaskFields(), $this->getMaskAdditionalTableModify());
+            $fields = array_merge(
+                $this->getMaskFields('tt_content'),
+                $this->getMaskFields('pages'),
+                $this->getMaskAdditionalTableModify()
+            );
             $fieldsToUpdate = array_diff($fields, $nonExcludeFields);
 
             $tablesModify = $result['tables_modify'];
@@ -172,28 +177,31 @@ class MaskPermissions
         return $this->tableDefinitionCollection->toArray();
     }
 
-    protected function getMaskFields(): array
+    protected function getMaskFields(string $table): array
     {
         $fields = [];
-        $tt_content = $this->tableDefinitionCollection->getTable('tt_content');
-        foreach ($tt_content->elements as $element) {
+        if (!$this->tableDefinitionCollection->hasTable($table)) {
+            return [];
+        }
+        $tableDefinition = $this->tableDefinitionCollection->getTable($table);
+        foreach ($tableDefinition->elements as $element) {
             foreach ($element->columns as $column) {
-                if ($this->tableDefinitionCollection->getFieldType($column, 'tt_content', $element->key)->equals(FieldType::PALETTE)) {
-                    foreach ($tt_content->palettes->getPalette($column)->showitem as $item) {
-                        $fields = $this->addField($fields, $item);
+                if ($this->tableDefinitionCollection->getFieldType($column, $table, $element->key)->equals(FieldType::PALETTE)) {
+                    foreach ($tableDefinition->palettes->getPalette($column)->showitem as $item) {
+                        $fields = $this->addField($fields, $item, $table);
                     }
                 } else {
-                    $fields = $this->addField($fields, $column);
+                    $fields = $this->addField($fields, $column, $table);
                 }
             }
         }
         return $fields;
     }
 
-    protected function addField(array $fields, string $column): array
+    protected function addField(array $fields, string $column, string $table): array
     {
         if (strpos($column, 'tx_mask') !== false) {
-            $fields[] = 'tt_content:' . $column;
+            $fields[] = $table . ':' . $column;
         }
         return $fields;
     }
