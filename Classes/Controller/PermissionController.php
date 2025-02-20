@@ -61,14 +61,7 @@ class PermissionController extends ActionController
             $this->view->assign('canUpdate', $this->permissionUpdater->updateNecessary());
             $this->view->assign('updatesNeeded', $updatesNeeded);
         }
-
-        if (method_exists($moduleTemplate, 'renderResponse')) {
-            return $moduleTemplate->renderResponse('Permission/IndexNew');
-        }
-
-        $moduleTemplate->setContent($this->view->render());
-        return new HtmlResponse($moduleTemplate->renderContent());
-
+        return $moduleTemplate->renderResponse('Permission/IndexNew');
     }
 
     public function updateAction(): ResponseInterface

@@ -27,7 +27,6 @@ use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
-use TYPO3\CMS\Core\Utility\VersionNumberUtility;
 
 class MaskPermissions
 {
@@ -267,15 +266,10 @@ class MaskPermissions
 
     protected function getConditionForDifferentTypo3Version($column, $table, $element): bool
     {
-        $currentVersion = VersionNumberUtility::getCurrentTypo3Version();
-        $typo3VersionArray = VersionNumberUtility::convertVersionStringToArray($currentVersion);
         $fieldType = $this->tableDefinitionCollection->getFieldType($column, $table, $element->key);
-
-        if (version_compare((string)$typo3VersionArray['version_main'], '12', '>=')) {
-            return $fieldType->name === FieldType::PALETTE->name && $fieldType->value === FieldType::PALETTE->value;
+        if (method_exists($fieldType, 'equals')) {
+            return $fieldType->equals(FieldType::PALETTE);
         }
-
-        return $fieldType->equals(FieldType::PALETTE);
+        return $fieldType === FieldType::PALETTE;
     }
-
 }
