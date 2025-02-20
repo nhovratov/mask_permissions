@@ -21,11 +21,13 @@ use MASK\Mask\Definition\TableDefinitionCollection;
 use MASK\Mask\Enumeration\FieldType;
 use MASK\Mask\Utility\AffixUtility;
 use TYPO3\CMS\Beuser\Domain\Repository\BackendUserGroupRepository;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
 use TYPO3\CMS\Core\Information\Typo3Version;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Core\Utility\VersionNumberUtility;
 
 class MaskPermissions
 {
@@ -186,7 +188,7 @@ class MaskPermissions
         $tableDefinition = $this->tableDefinitionCollection->getTable($table);
         foreach ($tableDefinition->elements as $element) {
             foreach ($element->columns as $column) {
-                if ($this->tableDefinitionCollection->getFieldType($column, $table, $element->key)->equals(FieldType::PALETTE)) {
+                if ($this->getConditionForDifferentTypo3Version($column, $table, $element)) {
                     foreach ($tableDefinition->palettes->getPalette($column)->showitem as $item) {
                         $fields = $this->addField($fields, $item, $table);
                     }
@@ -248,7 +250,7 @@ class MaskPermissions
         return $queryBuilder
             ->select('non_exclude_fields', 'tables_modify', 'explicit_allowdeny')
             ->from('be_groups')
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT)))
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
             ->executeQuery()
             ->fetchAssociative();
     }
@@ -262,4 +264,18 @@ class MaskPermissions
         }
         return $uids;
     }
+
+    protected function getConditionForDifferentTypo3Version($column, $table, $element): bool
+    {
+        $currentVersion = VersionNumberUtility::getCurrentTypo3Version();
+        $typo3VersionArray = VersionNumberUtility::convertVersionStringToArray($currentVersion);
+        $fieldType = $this->tableDefinitionCollection->getFieldType($column, $table, $element->key);
+
+        if (version_compare((string)$typo3VersionArray['version_main'], '12', '>=')) {
+            return $fieldType->name === FieldType::PALETTE->name && $fieldType->value === FieldType::PALETTE->value;
+        }
+
+        return $fieldType->equals(FieldType::PALETTE);
+    }
+
 }

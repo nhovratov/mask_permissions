@@ -21,8 +21,8 @@
 	},
 	"require": {
 		"php": "^7.4 || ^8.0",
-		"typo3/cms-core": "^11.5 || ^12.0",
-		"mask/mask": "^7.2 || ^8.0"
+		"typo3/cms-core": "^11.5 || ^12.0 || ^13.0",
+		"mask/mask": "^7.2 || ^8.0 || ^9.0"
 	},
 	"replace": {
 		"typo3-ter/mask-permissions": "self.version"

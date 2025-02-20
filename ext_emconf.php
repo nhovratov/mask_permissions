@@ -12,8 +12,8 @@ $EM_CONF['mask_permissions'] = [
     'version' => '3.1.0',
     'constraints' => [
         'depends' => [
-            'typo3' => '11.5.0-12.5.99',
-            'mask' => '7.2.0-8.99.99',
+            'typo3' => '11.5.0-13.5.99',
+            'mask' => '7.2.0-9.99.99',
         ],
         'conflicts' => [],
     ],

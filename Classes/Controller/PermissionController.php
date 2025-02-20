@@ -63,11 +63,12 @@ class PermissionController extends ActionController
         }
 
         if (method_exists($moduleTemplate, 'renderResponse')) {
-            return $moduleTemplate->renderResponse('IndexNew');
-        } else {
-            $moduleTemplate->setContent($this->view->render());
-            return new HtmlResponse($moduleTemplate->renderContent());
+            return $moduleTemplate->renderResponse('Permission/IndexNew');
         }
+
+        $moduleTemplate->setContent($this->view->render());
+        return new HtmlResponse($moduleTemplate->renderContent());
+
     }
 
     public function updateAction(): ResponseInterface
