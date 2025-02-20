@@ -21,6 +21,7 @@ use MASK\Mask\Definition\TableDefinitionCollection;
 use MASK\Mask\Enumeration\FieldType;
 use MASK\Mask\Utility\AffixUtility;
 use TYPO3\CMS\Beuser\Domain\Repository\BackendUserGroupRepository;
+use TYPO3\CMS\Core\Database\Connection;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Database\Query\QueryBuilder;
 use TYPO3\CMS\Core\Database\Query\Restriction\DeletedRestriction;
@@ -186,7 +187,7 @@ class MaskPermissions
         $tableDefinition = $this->tableDefinitionCollection->getTable($table);
         foreach ($tableDefinition->elements as $element) {
             foreach ($element->columns as $column) {
-                if ($this->tableDefinitionCollection->getFieldType($column, $table, $element->key)->equals(FieldType::PALETTE)) {
+                if ($this->getConditionForDifferentTypo3Version($column, $table, $element)) {
                     foreach ($tableDefinition->palettes->getPalette($column)->showitem as $item) {
                         $fields = $this->addField($fields, $item, $table);
                     }
@@ -248,7 +249,7 @@ class MaskPermissions
         return $queryBuilder
             ->select('non_exclude_fields', 'tables_modify', 'explicit_allowdeny')
             ->from('be_groups')
-            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, \PDO::PARAM_INT)))
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($uid, Connection::PARAM_INT)))
             ->executeQuery()
             ->fetchAssociative();
     }
@@ -261,5 +262,14 @@ class MaskPermissions
             $uids[] = $group->getUid();
         }
         return $uids;
+    }
+
+    protected function getConditionForDifferentTypo3Version($column, $table, $element): bool
+    {
+        $fieldType = $this->tableDefinitionCollection->getFieldType($column, $table, $element->key);
+        if (method_exists($fieldType, 'equals')) {
+            return $fieldType->equals(FieldType::PALETTE);
+        }
+        return $fieldType === FieldType::PALETTE;
     }
 }
