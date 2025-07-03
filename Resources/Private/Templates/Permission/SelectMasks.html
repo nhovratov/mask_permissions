@@ -1,0 +1,40 @@
+<f:layout name="Module" />
+
+<f:section name="Content">
+  <div class="container my-5">
+    <h1 class="mb-4 fw-semibold text-primary-emphasis">
+      Assign MASK Permissions to <span class="text-decoration-underline">{group.title}</span>
+    </h1>
+
+    <f:form action="saveMasks" controller="Permission">
+      <f:form.hidden name="group" value="{group.uid}" />
+
+      <div class="row row-cols-1 row-cols-md-2 g-4">
+        <f:for each="{maskElements}" as="element" key="key">
+          <div class="col">
+            <div class="card p-2 h-100 d-flex align-items-center justify-content-center">
+              <div class="form-check w-100">
+                <f:form.checkbox 
+                  class="form-check-input me-2"
+                  name="selected[]"
+                  id="checkbox-{key}"
+                  value="{key}"
+                  checked="{f:if(condition: '{key} === {selectedMaskElements.{key}}', then: 'checked')}" />
+                <label 
+                  class="form-check-label fw-bold text-break"
+                  for="checkbox-{key}"
+                  title="{element}">
+                  {element}
+                </label>
+              </div>
+            </div>
+          </div>
+        </f:for>
+      </div>
+
+      <div class="mt-5 text-center">
+        <f:form.submit value="Save Permissions" class="btn btn-primary btn-lg px-5" />
+      </div>
+    </f:form>
+  </div>
+</f:section>

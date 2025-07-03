@@ -18,6 +18,7 @@ declare(strict_types=1);
 namespace HOV\MaskPermissions\Controller;
 
 use Psr\Http\Message\ResponseInterface;
+use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use HOV\MaskPermissions\Permissions\MaskPermissions;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
@@ -75,6 +76,67 @@ class PermissionController extends ActionController
         } else {
             $this->addFlashMessage('Update failed.', '', ContextualFeedbackSeverity::ERROR);
         }
+        return $this->redirect('index');    
+    }
+
+    public function selectMasksAction(): ResponseInterface
+    {
+        $groupUid = (int)$this->request->getArgument('group');
+        $group = $this->backendUserGroupRepository->findByUid($groupUid);
+        if (!$group) {
+            $this->addFlashMessage('Group not found', '', ContextualFeedbackSeverity::ERROR);
+            return $this->redirect('index');
+        }
+
+        $maskElements = $this->getAvailableMaskCTypes();
+        $selectedMaskElements = $this->permissionUpdater->getSelectedMasks($groupUid);
+
+        $moduleTemplate = $this->moduleTemplateFactory->create($this->request);
+
+        if (method_exists($moduleTemplate, 'assign')) {
+            $moduleTemplate->assignMultiple([
+                'group' => $group,
+                'maskElements' => $maskElements,
+                'selectedMaskElements' => $selectedMaskElements,
+            ]);
+        }
+        return $moduleTemplate->renderResponse('Permission/SelectMasks');
+    }
+
+    public function saveMasksAction(): ResponseInterface
+    {
+        $groupUid = (int)$this->request->getArgument('group');
+        $selected = $this->request->hasArgument('selected') ? $this->request->getArgument('selected') : [];
+
+        $success = $this->permissionUpdater->update($groupUid, $selected);
+        if ($success) {
+            $this->addFlashMessage('MASK permissions saved.', '', ContextualFeedbackSeverity::OK);
+        } else {
+            $this->addFlashMessage('MASK permissions save failed.', '', ContextualFeedbackSeverity::ERROR);
+        }
+
         return $this->redirect('index');
+    }
+
+    protected function getAvailableMaskCTypes(): array
+    {
+        $maskElements = [];
+        $cTypes = $GLOBALS['TCA']['tt_content']['columns']['CType']['config']['items'];
+        foreach ($cTypes ?? [] as $type) {
+            $label = $type[0] ?? $type['label'];
+            $value = $type[1] ?? $type['value'];
+            if ($value !== '--div--') {
+                $maskElements[$value] = $this->getLanguageService()->sL($label);
+            }
+        }
+        $maskElements = array_filter($maskElements, function ($key) {
+            return strpos($key, 'mask_') === 0;
+        }, ARRAY_FILTER_USE_KEY);
+        return $maskElements;
+    }
+
+    protected function getLanguageService(): LanguageService
+    {
+        return $GLOBALS['LANG'];
     }
 }

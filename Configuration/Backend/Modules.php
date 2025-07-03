@@ -13,6 +13,8 @@ return [
             \HOV\MaskPermissions\Controller\PermissionController::class => [
                 'index',
                 'update',
+                'selectMasks',
+                'saveMasks',
             ],
         ],
     ],

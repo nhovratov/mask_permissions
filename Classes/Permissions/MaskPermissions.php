@@ -47,7 +47,7 @@ class MaskPermissions
         'editlock'
     ];
 
-    public function update(int $groupUid = 0): bool
+    public function update(int $groupUid = 0, array $selected = []): bool
     {
         $maskConfig = $this->getMaskConfig();
         if ($maskConfig === []) {
@@ -98,7 +98,7 @@ class MaskPermissions
             // Update explicit_allowdeny
             $explicitAllowDeny = $result['explicit_allowdeny'] ?? '';
             $explicitAllowDeny = GeneralUtility::trimExplode(',', $explicitAllowDeny);
-            $explicitAllowDeny = array_merge($explicitAllowDeny, $this->getMaskExplicitAllow());
+            $explicitAllowDeny = array_merge($explicitAllowDeny, $this->getMaskExplicitAllow($selected));
             $explicitAllowDeny = array_unique($explicitAllowDeny);
             $explicitAllowDeny = implode(',', $explicitAllowDeny);
 
@@ -230,7 +230,7 @@ class MaskPermissions
         return $additionalTableModify;
     }
 
-    protected function getMaskExplicitAllow(): array
+    protected function getMaskExplicitAllow(array $selected = []): array
     {
         $explicitAllow = [];
         $allow = '';
@@ -238,7 +238,13 @@ class MaskPermissions
             $allow = ':ALLOW';
         }
         foreach ($this->tableDefinitionCollection->getTable('tt_content')->elements as $elementDefinition) {
-            $explicitAllow[] = 'tt_content:CType:' . AffixUtility::addMaskCTypePrefix($elementDefinition->key) . $allow;
+            if ($selected) {
+                if (in_array(AffixUtility::addMaskCTypePrefix($elementDefinition->key), $selected)) {
+                    $explicitAllow[] = 'tt_content:CType:' . AffixUtility::addMaskCTypePrefix($elementDefinition->key) . $allow;
+                }
+            } else {
+                $explicitAllow[] = 'tt_content:CType:' . AffixUtility::addMaskCTypePrefix($elementDefinition->key) . $allow;
+            }
         }
         return $explicitAllow;
     }
@@ -271,5 +277,35 @@ class MaskPermissions
             return $fieldType->equals(FieldType::PALETTE);
         }
         return $fieldType === FieldType::PALETTE;
+    }
+    
+    /**
+     * Get selected masks for a specific backend user group.
+     *
+     * @param int $groupId The UID of the backend user group.
+     * @return array An associative array of selected masks.
+     */
+    public function getSelectedMasks($groupId): array
+    {
+        $queryBuilder = $this->getQueryBuilder('be_groups');
+        $result = $queryBuilder
+            ->select('explicit_allowdeny')
+            ->from('be_groups')
+            ->where($queryBuilder->expr()->eq('uid', $queryBuilder->createNamedParameter($groupId, Connection::PARAM_INT)))
+            ->executeQuery()
+            ->fetchOne();
+
+        if ($result) {
+            $masks = GeneralUtility::trimExplode(',', $result);
+            $filteredMasks = array_filter(array_map(function ($item) {
+                if (strpos($item, 'mask_') !== false) {
+                    return substr($item, strpos($item, 'mask_'));
+                }
+                return null;
+            }, $masks), fn($item) => !is_null($item));
+
+            return array_combine($filteredMasks, $filteredMasks);
+        }
+        return [];
     }
 }
